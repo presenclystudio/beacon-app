@@ -346,15 +346,30 @@ document.getElementById('tbody').addEventListener('dblclick',function(e){
 function showApp(){ document.getElementById('login').hidden=true; document.getElementById('app').hidden=false; }
 function showLogin(){ document.getElementById('app').hidden=true; document.getElementById('login').hidden=false; }
 async function doLogin(){
-  var email=document.getElementById('email').value.trim();
-  var pass=document.getElementById('pass').value;
-  var err=document.getElementById('loginErr'); err.textContent='';
+  var email=(document.getElementById('email').value||'').trim();
+  var pass=(document.getElementById('pass').value||'').trim();
+  var err=document.getElementById('loginErr');
   var btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Signing in\u2026';
+  if(!email || !pass){
+    err.style.color='#c0392b';
+    err.textContent='Please type both an email and a password.';
+    btn.disabled=false; btn.textContent='Sign in'; return;
+  }
+  err.style.color='#5b6b6e';
+  err.textContent='Trying to sign in as '+email+' \u2026';
   try{
     var r=await sb.auth.signInWithPassword({email:email, password:pass});
-    if(r.error){ err.textContent=r.error.message; }
-    else { showApp(); loadAndRender(); }
-  }catch(e){ err.textContent=String(e.message||e); }
+    if(r.error){
+      err.style.color='#c0392b';
+      err.textContent='Could not sign in: '+r.error.message+'  (tried: '+email+')';
+    } else {
+      err.style.color='#1f7a4d';
+      err.textContent='Signed in \u2713 loading leads\u2026';
+      showApp();
+      try{ await loadAndRender(); }
+      catch(le){ err.style.color='#c0392b'; err.textContent='Signed in, but loading leads failed: '+String(le.message||le); }
+    }
+  }catch(e){ err.style.color='#c0392b'; err.textContent='Error: '+String(e.message||e); }
   btn.disabled=false; btn.textContent='Sign in';
 }
 document.getElementById('loginBtn').addEventListener('click', doLogin);
