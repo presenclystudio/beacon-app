@@ -175,6 +175,7 @@ function todayStr(){ var d=new Date(); return new Date(d.getTime()-d.getTimezone
 function daysAgo(n){ var d=new Date(Date.now()-n*86400000); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
 
 var filter='all', search='', industry='all', cityF='', sortCol='score', sortDir='desc';
+var CAP=300; /* max rows painted into the table at once; all leads stay in memory for search/filter */
 function fmtConf(c){ return (c===null||c===undefined)?'\u2014':Number(c).toFixed(2); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
 var STLABEL={'new':'New','contacted':'Contacted','callback':'Call back','not_interested':'Not interested','won':'Won'};
@@ -241,7 +242,8 @@ function render(){
   if(!document.getElementById('activity').hidden) renderActivity(rows);
   var tb=document.getElementById('tbody');
   if(!rows.length){ tb.innerHTML='<tr><td colspan="5"><div class="empty">No leads match these filters.</div></td></tr>'; return; }
-  tb.innerHTML=rows.map(function(l){
+  var shown = rows.length>CAP ? rows.slice(0,CAP) : rows;
+  var html = shown.map(function(l){
     var sigLabel=l.web_signal==='no_site'?'No website':'Social-only';
     var st=l.status||'new';
     var phone=l.phone?'<span class="phone">'+esc(l.phone)+'</span>':'<span class="nophone">no phone</span>';
@@ -255,21 +257,42 @@ function render(){
       +'<td><select class="stsel st-'+(st==='new'?'':st)+'" data-k="'+esc(l.dedupe_key)+'">'+opts+'</select></td>'
     +'</tr>';
   }).join('');
+  if(rows.length>CAP){
+    html += '<tr><td colspan="5"><div class="empty">Showing the top '+CAP+' of '+rows.length.toLocaleString()+' matches, sorted by score. Use the search box, industry, or city filters above to narrow to the rest.</div></td></tr>';
+  }
+  tb.innerHTML=html;
 }
 
 /* ---- Supabase data layer ---- */
+var LEAD_COLS='dedupe_key,name,category,phone,city,web_signal,confidence,sources,score,status,contacted_at';
 async function loadLeads(){
-  var all=[], from=0, size=1000;
-  while(true){
-    var r = await sb.from('businesses')
-      .select('dedupe_key,name,category,phone,city,web_signal,confidence,sources,score,status,contacted_at')
-      .in('web_signal',['no_site','social_only'])
-      .order('score',{ascending:false})
-      .range(from, from+size-1);
-    if(r.error) throw r.error;
-    all=all.concat(r.data);
-    if(!r.data || r.data.length<size) break;
-    from+=size;
+  var size=1000;
+  /* First page also asks Supabase for the exact total count. */
+  var first = await sb.from('businesses')
+    .select(LEAD_COLS, {count:'exact'})
+    .in('web_signal',['no_site','social_only'])
+    .order('score',{ascending:false}).order('dedupe_key',{ascending:true})
+    .range(0, size-1);
+  if(first.error) throw first.error;
+  var all = first.data || [];
+  var total = (first.count==null) ? all.length : first.count;
+  if(total > size){
+    /* Fetch every remaining page at the same time instead of one-by-one. */
+    var reqs=[];
+    for(var from=size; from<total; from+=size){
+      reqs.push(
+        sb.from('businesses')
+          .select(LEAD_COLS)
+          .in('web_signal',['no_site','social_only'])
+          .order('score',{ascending:false}).order('dedupe_key',{ascending:true})
+          .range(from, from+size-1)
+      );
+    }
+    var pages = await Promise.all(reqs);
+    for(var i=0;i<pages.length;i++){
+      if(pages[i].error) throw pages[i].error;
+      all = all.concat(pages[i].data||[]);
+    }
   }
   return all;
 }
