@@ -16,6 +16,8 @@ header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
 .wordmark{font-weight:800;font-size:21px;letter-spacing:-.02em}
 .wordmark span{color:var(--beacon)}
 .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.signout{margin-left:auto;flex:none;background:transparent;border:1px solid var(--line);color:var(--dim);font:inherit;font-size:12px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
+.signout:hover{color:var(--bone);border-color:var(--beacon);background:rgba(255,178,62,.06)}
 .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px}
 .metric{background:var(--ink2);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
 .metric .k{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);font-weight:600;margin-bottom:7px}
@@ -108,6 +110,7 @@ tbody tr:hover{background:rgba(255,178,62,.04)}
   <header>
     <div class="mark"><div class="ring"></div><div class="core"></div></div>
     <div><div class="wordmark">BE<span>A</span>CON</div><div class="sub">live &middot; synced across your devices</div></div>
+    <button class="signout" id="logout">Sign out</button>
   </header>
   <div class="filters">
     <select class="pick" id="industry"></select>
@@ -145,7 +148,7 @@ tbody tr:hover{background:rgba(255,178,62,.04)}
       <tbody id="tbody"></tbody>
     </table>
   </div>
-  <div class="foot">Live from your shared database &mdash; changes sync across devices. Double-click a row to look it up. &middot; <a id="logout">Sign out</a></div>
+  <div class="foot">Live from your shared database &mdash; changes sync across devices. Double-click a row to look it up.</div>
 </div>
 </div>
 
