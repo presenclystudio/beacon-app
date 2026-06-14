@@ -343,8 +343,14 @@ document.getElementById('tbody').addEventListener('dblclick',function(e){
 });
 
 /* ---- auth ---- */
-function showApp(){ document.getElementById('login').hidden=true; document.getElementById('app').hidden=false; }
-function showLogin(){ document.getElementById('app').hidden=true; document.getElementById('login').hidden=false; }
+function showApp(){
+  var lg=document.getElementById('login'); lg.hidden=true; lg.style.display='none';
+  var ap=document.getElementById('app'); ap.hidden=false; ap.style.display='';
+}
+function showLogin(){
+  var ap=document.getElementById('app'); ap.hidden=true; ap.style.display='none';
+  var lg=document.getElementById('login'); lg.hidden=false; lg.style.display='flex';
+}
 async function doLogin(){
   var email=(document.getElementById('email').value||'').trim();
   var pass=(document.getElementById('pass').value||'').trim();
